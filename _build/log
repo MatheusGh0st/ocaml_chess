@@ -1,0 +1,6 @@
+# dune init proj ocaml_chess
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Workspace root:
+# /home/ghost/Documents/Programming/Ocaml/Ocaml_Projects/ocaml_chess
+# Auto-detected concurrency: 4
