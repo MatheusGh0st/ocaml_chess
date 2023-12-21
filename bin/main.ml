@@ -160,6 +160,8 @@ let new_table30 = add_piece new_table29 { line = 7; column = 6 } pawn_piece_whit
 let new_table31 = add_piece new_table30 { line = 7; column = 7 } pawn_piece_white
 let new_table32 = add_piece new_table31 { line = 7; column = 8 } pawn_piece_white
 
+let moves_pieces_array: piece array = [|default_piece|]
+
 let piece_to_string (p : piece) : string =
   p.symbol
 
@@ -188,12 +190,28 @@ let print_table (t: table) : unit =
   print_newline ()
 [@@warning "-32"]
 
-let () =
+let is_input_valid o_input d_input =
+  let is_valid =
+    (String.length o_input > 2 || String.length d_input > 2
+    || String.length o_input = 0 || String.length d_input = 0)
+  in
+  is_valid
+
+let rec program table =
+  print_table table;
   print_string "Origin: ";
   let origin = read_line () in
   print_string "Destiny: ";
   let destiny = read_line () in
   let c_origin = str_to_piece_position origin in
   let c_destiny = str_to_piece_position destiny in
-  Printf.printf "Origin: %d-%d\nDestiny: %d-%d\n" c_origin.line c_origin.column c_destiny.line c_destiny.column;
-  print_table new_table32
+  if (is_input_valid origin destiny) then begin
+    program table
+  end else
+    let update_table table o_pos d_pos a_pieces =
+      let mv_table = move_piece table o_pos d_pos a_pieces in
+      program (fst mv_table)
+    in
+    update_table table c_origin c_destiny moves_pieces_array
+  
+let () = program new_table32
