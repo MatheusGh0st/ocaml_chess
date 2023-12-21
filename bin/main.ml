@@ -24,7 +24,7 @@ let knight_piece_black =
 let pawn_piece_black =
   { position = { line = 0; column = 0}; color = White; symbol = "P"}
 
-(* let king_piece_white =
+let king_piece_white =
   { position = { line = 0; column = 0}; color = White; symbol = "K" }
 
 let tower_piece_white =
@@ -40,7 +40,7 @@ let knight_piece_white =
   { position = { line = 0; column = 0}; color = White; symbol = "N" }
 
 let pawn_piece_white =
-  { position = { line = 0; column = 0}; color = White; symbol = "P"} *)
+  { position = { line = 0; column = 0}; color = White; symbol = "P"}
 
 let default_position = { line = 0; column = 0}
 
@@ -81,8 +81,31 @@ let new_table14 = add_piece new_table13 { line = 2; column = 6 } pawn_piece_blac
 let new_table15 = add_piece new_table14 { line = 2; column = 7 } pawn_piece_black
 let new_table16 = add_piece new_table15 { line = 2; column = 8 } pawn_piece_black
 
+let new_table17 = add_piece new_table16 { line = 8; column = 1 } tower_piece_white
+let new_table18 = add_piece new_table17 { line = 8; column = 2 } knight_piece_white
+let new_table19 = add_piece new_table18 { line = 8; column = 3 } bishop_piece_white
+let new_table20 = add_piece new_table19 { line = 8; column = 4 } queen_piece_white
+let new_table21 = add_piece new_table20 { line = 8; column = 5 } king_piece_white
+let new_table22 = add_piece new_table21 { line = 8; column = 6 } bishop_piece_white
+let new_table23 = add_piece new_table22 { line = 8; column = 7 } knight_piece_white
+let new_table24 = add_piece new_table23 { line = 8; column = 8 } tower_piece_white
+let new_table25 = add_piece new_table24 { line = 7; column = 1 } pawn_piece_white
+let new_table26 = add_piece new_table25 { line = 7; column = 2 } pawn_piece_white
+let new_table27 = add_piece new_table26 { line = 7; column = 3 } pawn_piece_white
+let new_table28 = add_piece new_table27 { line = 7; column = 4 } pawn_piece_white
+let new_table29 = add_piece new_table28 { line = 7; column = 5 } pawn_piece_white
+let new_table30 = add_piece new_table29 { line = 7; column = 6 } pawn_piece_white
+let new_table31 = add_piece new_table30 { line = 7; column = 7 } pawn_piece_white
+let new_table32 = add_piece new_table31 { line = 7; column = 8 } pawn_piece_white
+
 let piece_to_string (p : piece) : string =
   p.symbol
+
+let str_to_piece_position str =
+  let lines_pos = (8 - int_of_char str.[1] + int_of_char '0') + 1 in
+  let column_pos = (int_of_char str.[0] -  int_of_char 'a') + 1 in
+  { line = lines_pos; column = column_pos }
+  [@@warning "-32"]
 
 let print_table (t: table) : unit =
   Array.iteri (fun i row ->
@@ -104,4 +127,11 @@ let print_table (t: table) : unit =
 [@@warning "-32"]
 
 let () =
-  print_table new_table16
+  print_string "Origin: ";
+  let origin = read_line () in
+  print_string "Destiny: ";
+  let destiny = read_line () in
+  let c_origin = str_to_piece_position origin in
+  let c_destiny = str_to_piece_position destiny in
+  Printf.printf "Origin: %d-%d\nDestiny: %d-%d\n" c_origin.line c_origin.column c_destiny.line c_destiny.column;
+  print_table new_table32
