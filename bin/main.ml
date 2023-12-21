@@ -62,6 +62,68 @@ let add_piece (t: table) (pos: position) (new_piece: piece) : table =
   else
     t
 
+let remove_piece (t: table) (pos: position) ?(new_piece: piece option) : table =
+  let row = pos.line - 1 in
+  let col = pos.column - 1 in
+  if row >= 0 && row < Array.length t.piece_matrix &&
+      col >= 0 && col < Array.length t.piece_matrix.(0) &&
+      t.piece_matrix.(row).(col).symbol <> "-" then
+    let updated_matrix = Array.map Array.copy t.piece_matrix in
+    let save_piece = t.piece_matrix.(row).(col) in
+    let updated_piece =
+      match new_piece with
+      | Some(piece) -> piece
+      | None -> save_piece
+    in
+    updated_matrix.(row).(col) <- updated_piece;
+    { piece_matrix = updated_matrix }
+  else
+    t
+  [@@warning "-16"]
+
+let move_piece (t: table) (source_pos: position) (dest_pos: position) ?(new_piece: piece option) (mv_array: piece array) : table * piece array =
+  let src_row = source_pos.line - 1 in
+  let src_col = source_pos.column - 1 in
+  let dest_row = dest_pos.line - 1 in
+  let dest_col = dest_pos.column - 1 in
+  if src_row >= 0 && src_row < Array.length t.piece_matrix &&
+    src_col >= 0 && src_col < Array.length t.piece_matrix.(0) &&
+    dest_row >= 0 && dest_row < Array.length t.piece_matrix &&
+    dest_col >= 0 && dest_col < Array.length t.piece_matrix.(0) then
+      let updated_matrix = Array.map Array.copy t.piece_matrix in
+      let moved_piece = updated_matrix.(src_row).(src_col) in
+      let captured_piece = updated_matrix.(dest_row).(dest_col) in
+
+      updated_matrix.(src_row).(src_col) <- default_piece;
+
+      if captured_piece.symbol <> "-" then
+        updated_matrix.(dest_row).(dest_col) <- moved_piece;
+
+      let updated_mv_array =
+        match new_piece with
+        | Some(piece) -> Array.append mv_array [|moved_piece; piece|]
+        | None -> Array.append mv_array [|moved_piece|]
+      in
+
+      let updated_table =
+        match new_piece with
+        | Some(piece) -> add_piece { piece_matrix = updated_matrix } dest_pos piece
+        | None -> add_piece { piece_matrix = updated_matrix } dest_pos moved_piece
+      in
+
+      let final_table, final_mv_array =
+        if captured_piece.symbol <> "-" then
+          let updated = remove_piece updated_table dest_pos ?new_piece:None in
+          updated, Array.append updated_mv_array [|captured_piece|]
+        else
+          updated_table, updated_mv_array
+      in
+
+      final_table, final_mv_array
+    else
+      t, mv_array
+[@@warning "-32"]
+
 let new_table = create_table 8 8
 
 let new_table1 = add_piece new_table { line = 1; column = 1 } tower_piece_black
