@@ -4,7 +4,7 @@ type piece_color = Black | White | None [@@warning "-37"]
 
 type piece = { position: position; color: piece_color; symbol: string } [@@warning "-69"]
 
-type table = { piece_matrix: piece array array }
+type table = { piece_matrix: piece array array } [@@warning "-69"]
 
 let king_piece_black =
   { position = { line = 0; column = 0}; color = Black; symbol = "K" }
@@ -124,6 +124,128 @@ let move_piece (t: table) (source_pos: position) (dest_pos: position) ?(new_piec
       t, mv_array
 [@@warning "-32"]
 
+let valid_pawn_move (t: table) (source_pos: position) (dest_pos: position) : bool =
+  let row_diff = source_pos.line - dest_pos.line in
+  let col_diff = abs (source_pos.column - dest_pos.column) in
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+  let t_des = t.piece_matrix.(dest_pos.line - 1).(dest_pos.column - 1) in
+
+  let valid_first_move =
+    if t_src.symbol = "P" then
+      match t_src.color with
+      | White -> source_pos.line = 2 && row_diff = 2 && col_diff = 0 && t_des.symbol = "-"
+      | Black -> source_pos.line = 7 && row_diff = -2 && col_diff = 0 && t_des.symbol = "-"
+      | _ -> false
+    else false
+  in
+
+  let valid_forward_move =
+    if t_src.symbol = "P" then
+      match t_src.color with
+      | White -> row_diff = 1 && col_diff = 0 && t_des.symbol = "-"
+      | Black -> row_diff = -1 && col_diff = 0 && t_des.symbol = "-"
+      | _ -> false
+    else false
+  in
+
+  let valid_capture =
+    row_diff = 1 && col_diff = 1 && t_des.symbol <> "-" &&
+    t_des.color <> t_src.color
+  in
+
+  valid_first_move || valid_forward_move || valid_capture
+
+let valid_king_move (t: table) (source_pos: position) (dest_pos: position) : bool =
+  let row_diff = abs (source_pos.line - dest_pos.line) in
+  let col_diff = abs (source_pos.column - dest_pos.column) in
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+  let t_des = t.piece_matrix.(dest_pos.line - 1).(dest_pos.column - 1) in
+
+  (row_diff <= 1 && col_diff <= 1) &&
+  (t_src.symbol = "K" && t_des.symbol <> "K" && t_des.color <> t_src.color)
+
+let valid_tower_move (t: table) (source_pos: position) (dest_pos: position) : bool =
+  let row_diff = abs (source_pos.line - dest_pos.line) in
+  let col_diff = abs (source_pos.column - dest_pos.column) in
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+  let t_des = t.piece_matrix.(dest_pos.line - 1).(dest_pos.column - 1) in
+
+  (row_diff = 0 || col_diff = 0) &&
+  not (row_diff = 0 && col_diff = 0) &&
+  t_src.symbol = "T" &&
+  t_src.color <> t_des.color
+  
+let valid_knight_move (t: table) (source_pos: position) (dest_pos: position) : bool =
+  let row_diff = abs (source_pos.line - dest_pos.line) in
+  let col_diff = abs (source_pos.column - dest_pos.column) in
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+  let t_des = t.piece_matrix.(dest_pos.line - 1).(dest_pos.column - 1) in
+
+  let valid_l_shape =
+    (row_diff = 1 && col_diff = 2) || (row_diff = 2 && col_diff = 1)
+  in
+  let not_staying = not (row_diff = 0 && col_diff = 0) in
+  let is_knight = t_src.symbol = "N" in
+  let can_move = t_des.symbol = "-" || t_des.color <> t_src.color in
+
+  valid_l_shape && not_staying && is_knight && can_move
+  
+let valid_queen_move (t: table) (source_pos: position) (dest_pos: position) : bool =
+  let row_diff = abs (source_pos.line - dest_pos.line) in
+  let col_diff = abs (source_pos.column - dest_pos.column) in
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+  let t_des = t.piece_matrix.(dest_pos.line - 1).(dest_pos.column - 1) in
+
+  let is_valid_horizontal_or_vertical =
+    (row_diff = 0 || col_diff = 0) && not (row_diff = 0 && col_diff = 0)
+  in
+  let is_valid_diagonal =
+    row_diff = col_diff && not (row_diff = 0 && col_diff = 0)
+  in
+  let is_queen = t_src.symbol = "Q" in
+  let can_move = t_des.symbol = "-" || t_des.color <> t_src.color in
+
+  (is_valid_horizontal_or_vertical || is_valid_diagonal) &&
+  is_queen && can_move
+  
+let valid_empty_path t source_pos dest_pos =
+  let rec check_path t (current_pos : position) (dest_pos : position) : bool =
+    if current_pos = dest_pos then
+      true
+    else
+      let row_step = if dest_pos.line > current_pos.line then 1 else -1 in
+      let col_step = if dest_pos.column > current_pos.column then 1 else -1 in
+      let next_pos = { line = current_pos.line + row_step; column = current_pos.column + col_step } in
+      let piece_at_next_pos = t.piece_matrix.(next_pos.line - 1).(next_pos.column - 1) in
+      if piece_at_next_pos.symbol <> "-" then
+        false
+      else
+        check_path t next_pos dest_pos
+  in
+  let row_diff = dest_pos.line - source_pos.line in
+  let col_diff = dest_pos.column - source_pos.column in
+  if abs row_diff <> abs col_diff then
+    false
+  else
+    check_path t source_pos dest_pos
+
+let valid_bishop_move (t: table) (source_pos: position) (dest_pos: position) : bool =
+  let row_diff = abs (source_pos.line - dest_pos.line) in
+  let col_diff = abs (source_pos.column - dest_pos.column) in
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+  let t_des = t.piece_matrix.(dest_pos.line - 1).(dest_pos.column - 1) in
+
+  let same_color_diagonal =
+    row_diff = col_diff
+  in
+  let not_staying = not (row_diff = 0 && col_diff = 0) in
+
+  let can_capture =
+    t_des.symbol <> "-" && t_src.color <> t_des.color
+  in
+
+  same_color_diagonal && not_staying && (t_des.symbol = "-" || can_capture) && valid_empty_path t source_pos dest_pos
+
 let new_table = create_table 8 8
 
 let new_table1 = add_piece new_table { line = 1; column = 1 } tower_piece_black
@@ -171,6 +293,20 @@ let str_to_piece_position str =
   { line = lines_pos; column = column_pos }
   [@@warning "-32"]
 
+let is_valid_move (t: table) (src_pos: position) (dest_pos: position) : bool =
+  let piece = t.piece_matrix.(src_pos.line - 1).(src_pos.column - 1).symbol in
+  let is_valid =
+    match piece with
+    | "P" -> valid_pawn_move t src_pos dest_pos
+    | "K" -> valid_king_move t src_pos dest_pos
+    | "Q" -> valid_queen_move t src_pos dest_pos
+    | "B" -> valid_bishop_move t src_pos dest_pos
+    | "N" -> valid_knight_move t src_pos dest_pos
+    | "T" -> valid_tower_move t src_pos dest_pos
+    | _ -> false
+  in
+  is_valid
+
 let print_table (t: table) : unit =
   Array.iteri (fun i row ->
     print_int (8 - i);
@@ -205,7 +341,9 @@ let rec program table =
   let destiny = read_line () in
   let c_origin = str_to_piece_position origin in
   let c_destiny = str_to_piece_position destiny in
-  if (is_input_valid origin destiny) then begin
+  if (is_input_valid origin destiny)
+    || not (is_valid_move table c_origin c_destiny) then begin
+    Printf.printf "Please enter a valid position\n";
     program table
   end else
     let update_table table o_pos d_pos a_pieces =
