@@ -155,6 +155,20 @@ let valid_pawn_move (t: table) (source_pos: position) (dest_pos: position) : boo
 
   valid_first_move || valid_forward_move || valid_capture
 
+let convert_player_to_piece_color (c: player_color) : piece_color =
+  match c with
+  | Black -> Black
+  | White -> White
+
+let is_your_turn (t: table) (source_pos: position) (c_color: player_color) : bool =
+  let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
+
+  let con_color = convert_player_to_piece_color c_color in
+  let same_color =
+    t_src.color = con_color in
+
+  same_color && t_src.symbol <> "-"
+
 let valid_king_move (t: table) (source_pos: position) (dest_pos: position) : bool =
   let row_diff = abs (source_pos.line - dest_pos.line) in
   let col_diff = abs (source_pos.column - dest_pos.column) in
@@ -333,7 +347,7 @@ let is_input_valid o_input d_input =
   in
   is_valid
 
-let rec program table =
+let rec program table color =
   print_table table;
   print_string "Origin: ";
   let origin = read_line () in
@@ -342,14 +356,15 @@ let rec program table =
   let c_origin = str_to_piece_position origin in
   let c_destiny = str_to_piece_position destiny in
   if (is_input_valid origin destiny)
-    || not (is_valid_move table c_origin c_destiny) then begin
+    || not (is_valid_move table c_origin c_destiny) || not (is_your_turn table c_origin color) then begin
     Printf.printf "Please enter a valid position\n";
-    program table
+    program table color
   end else
     let update_table table o_pos d_pos a_pieces =
       let mv_table = move_piece table o_pos d_pos a_pieces in
-      program (fst mv_table)
+      let up_player = change_player color in
+      program (fst mv_table) up_player
     in
     update_table table c_origin c_destiny moves_pieces_array
   
-let () = program new_table32
+let () = program new_table32 init_player
