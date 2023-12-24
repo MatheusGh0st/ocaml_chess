@@ -24,7 +24,7 @@ let knight_piece_black =
   { position = { line = 0; column = 0}; color = Black; symbol = "N" }
 
 let pawn_piece_black =
-  { position = { line = 0; column = 0}; color = White; symbol = "P"}
+  { position = { line = 0; column = 0}; color = Black; symbol = "P"}
 
 let king_piece_white =
   { position = { line = 0; column = 0}; color = White; symbol = "K" }
@@ -126,6 +126,7 @@ let move_piece (t: table) (source_pos: position) (dest_pos: position) ?(new_piec
       t, mv_array
 [@@warning "-32"]
 
+
 let valid_pawn_move (t: table) (source_pos: position) (dest_pos: position) : bool =
   let row_diff = source_pos.line - dest_pos.line in
   let col_diff = abs (source_pos.column - dest_pos.column) in
@@ -166,9 +167,9 @@ let is_your_turn (t: table) (source_pos: position) (c_color: player_color) : boo
   let t_src = t.piece_matrix.(source_pos.line - 1).(source_pos.column - 1) in
 
   let con_color = convert_player_to_piece_color c_color in
-  let same_color =
+  let same_color = 
     t_src.color = con_color in
-
+  
   same_color && t_src.symbol <> "-"
 
 let valid_king_move (t: table) (source_pos: position) (dest_pos: position) : bool =
@@ -261,6 +262,54 @@ let valid_bishop_move (t: table) (source_pos: position) (dest_pos: position) : b
   in
 
   same_color_diagonal && not_staying && (t_des.symbol = "-" || can_capture) && valid_empty_path t source_pos dest_pos
+
+exception KingNotFound
+
+let find_king_position (t: table) (color: piece_color) : position =
+  let rec find_king t row col =
+    if row >= Array.length t.piece_matrix then
+      raise KingNotFound
+    else if col >= Array.length t.piece_matrix.(0) then
+      find_king t (row + 1) 0
+    else
+      let piece = t.piece_matrix.(row).(col) in
+      if piece.color = color && piece.symbol = "K" then
+        { line = row + 1; column = col + 1 }
+      else
+        find_king t row (col + 1)
+  in
+  find_king t 0 0
+
+let is_position_under_threat (t: table) (pos: position) (color: piece_color) : bool =
+  let rec check_positions positions =
+    match positions with
+    | [] -> false
+    | hd :: tl ->
+        let piece = t.piece_matrix.(hd.line - 1).(hd.column - 1) in
+        if piece.color <> color then
+          match piece.symbol with
+          | "P" -> valid_pawn_move t hd pos
+          | "K" -> valid_king_move t hd pos
+          | "Q" -> valid_queen_move t hd pos
+          | "B" -> valid_bishop_move t hd pos
+          | "N" -> valid_knight_move t hd pos
+          | "T" -> valid_tower_move t hd pos
+          | _ -> false (* Invalid piece *)
+        else
+          check_positions tl
+  in
+
+  let row_numbers = List.init 8 (fun x -> x + 1) in
+  let column_numbers = List.init 8 (fun x -> x + 1) in
+  let positions = List.concat (List.map (fun row -> List.map (fun col -> { line = row; column = col }) column_numbers) row_numbers) in
+  check_positions positions
+
+let is_check (t: table) (color: piece_color) : bool =
+  try
+    let king_pos = find_king_position t color in
+    is_position_under_threat t king_pos color
+  with
+  | KingNotFound -> false
 
 let new_table = create_table 8 8
 
@@ -375,16 +424,20 @@ let rec program table color =
   let destiny = read_line () in
   let c_origin = str_to_piece_position origin in
   let c_destiny = str_to_piece_position destiny in
-  if (is_input_valid origin destiny)
-    || not (is_valid_move table c_origin c_destiny) || not (is_your_turn table c_origin color) then begin
-    Printf.printf "Please enter a valid position\n";
+  if (is_check table (convert_player_to_piece_color color)) then begin
+    Printf.printf "Player in check\n";
     program table color
   end else
-    let update_table table o_pos d_pos a_pieces =
-      let mv_table = move_piece table o_pos d_pos a_pieces in
-      let up_player = change_player color in
-      program (fst mv_table) up_player
-    in
-    update_table table c_origin c_destiny moves_pieces_array
+    if (is_input_valid origin destiny)
+      || not (is_valid_move table c_origin c_destiny) || not (is_your_turn table c_origin color) then begin
+      Printf.printf "Please enter a valid position\n";
+      program table color
+    end else
+      let update_table table o_pos d_pos a_pieces =
+        let mv_table = move_piece table o_pos d_pos a_pieces in
+        let up_player = change_player color in
+        program (fst mv_table) up_player
+      in
+      update_table table c_origin c_destiny moves_pieces_array
   
 let () = program new_table32 init_player
