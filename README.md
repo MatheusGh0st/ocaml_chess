@@ -9,5 +9,5 @@ dune exec ocaml_chess
 
 Todo:
 
- - [] Implement Check
- - [] Implement Checkmate
+ - [ ] Implement Check
+ - [ ] Implement Checkmate
