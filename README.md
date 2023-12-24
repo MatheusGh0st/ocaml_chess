@@ -22,6 +22,6 @@ Destiny:
 
 ## Todo:
 
- - [ ] Implement Check
+ - [X] Implement Check
  - [ ] Implement Checkmate
 
