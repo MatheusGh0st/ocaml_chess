@@ -6,6 +6,8 @@ type piece = { position: position; color: piece_color; symbol: string } [@@warni
 
 type table = { piece_matrix: piece array array } [@@warning "-69"]
 
+type player_color = Black | White [@@warning "-37"]
+
 let king_piece_black =
   { position = { line = 0; column = 0}; color = Black; symbol = "K" }
 
@@ -346,6 +348,15 @@ let is_input_valid o_input d_input =
     || String.length o_input = 0 || String.length d_input = 0)
   in
   is_valid
+
+let init_player = White
+
+let change_player (color: player_color): player_color =
+  let update_player = match color with
+  | White -> Black
+  | Black -> White
+  in
+  update_player
 
 let rec program table color =
   print_table table;
