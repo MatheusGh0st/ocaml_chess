@@ -358,7 +358,16 @@ let change_player (color: player_color): player_color =
   in
   update_player
 
+let color_to_string color =
+  let convert_color = match color with
+  | White -> "White"
+  | Black -> "Black"
+  in
+  convert_color
+
 let rec program table color =
+  let _ = Sys.command "clear" in
+  Printf.printf "Awaiting the color: %s\n" (color_to_string color);
   print_table table;
   print_string "Origin: ";
   let origin = read_line () in

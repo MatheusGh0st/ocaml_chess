@@ -4,7 +4,7 @@
 # Workspace root:
 # /home/ghost/Documents/Programming/Ocaml/Ocaml_Projects/ocaml_chess
 # Auto-detected concurrency: 4
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_eb145a_output
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_a05bc6_output
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
